@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đào Vàng Quiz - Trò chơi trắc nghiệm kỳ thú</title>
+  <!-- Google Fonts for Game Feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Luckiest+Guy&display=swap" rel="stylesheet">
+  <!-- CSS Styles -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    
+    <!-- ========================================== -->
+    <!-- 1. LANDING SCREEN                          -->
+    <!-- ========================================== -->
+    <div id="screen-landing" class="screen active">
+      <div class="logo-container">
+        <h1 class="game-title">GOLD MINER<br><span class="highlight">QUIZ</span></h1>
+        <div class="miner-animation">
+          <div class="claw-rope"></div>
+          <div class="claw"></div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="tab-control">
+          <button id="btn-tab-join" class="tab-btn active">HỌC SINH THAM GIA</button>
+          <button id="btn-tab-host" class="tab-btn">GIÁO VIÊN (TẠO PHÒNG)</button>
+        </div>
+
+        <!-- Join Form for Students -->
+        <div id="form-join" class="form-section active">
+          <div class="input-group">
+            <label for="input-code">Mã Phòng (4 chữ số):</label>
+            <input type="number" id="input-code" placeholder="Ví dụ: 1234" pattern="[0-9]*" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <label for="input-nickname">Tên Của Bạn:</label>
+            <input type="text" id="input-nickname" placeholder="Ví dụ: Anh Tuấn" maxlength="15">
+          </div>
+          <button id="btn-join" class="btn btn-primary btn-block">VÀO PHÒNG ĐÀO VÀNG 🚀</button>
+          <div id="join-error-msg" class="error-msg"></div>
+        </div>
+
+        <!-- Host Form for Teachers -->
+        <div id="form-host" class="form-section">
+          <p class="description">Tạo phòng chơi trắc nghiệm trực tuyến. Chiếu màn hình này lên máy chiếu để học sinh cùng tham gia!</p>
+          <button id="btn-create-room" class="btn btn-secondary btn-block">TẠO PHÒNG CHƠI MỚI 🪙</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. HOST LOBBY SCREEN                       -->
+    <!-- ========================================== -->
+    <div id="screen-host-lobby" class="screen">
+      <header class="lobby-header">
+        <div class="room-code-badge">
+          <span class="badge-label">MÃ PHÒNG CHƠI:</span>
+          <span id="host-pin" class="badge-value">0000</span>
+        </div>
+        <button id="btn-start-game" class="btn btn-success">BẮT ĐẦU CHƠI (0)</button>
+      </header>
+      
+      <main class="lobby-main">
+        <h2 class="lobby-title">Đang đợi các thợ mỏ tham gia...</h2>
+        <div id="lobby-players-list" class="players-grid">
+          <!-- Joined players will be rendered dynamically here -->
+        </div>
+      </main>
+      
+      <footer class="lobby-footer">
+        <p>Truy cập ứng dụng và nhập mã phòng trên thiết bị của bạn.</p>
+      </footer>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. PLAYER LOBBY SCREEN                     -->
+    <!-- ========================================== -->
+    <div id="screen-player-lobby" class="screen">
+      <div class="player-status-container">
+        <div class="player-avatar">🤠</div>
+        <h2>Chào thợ mỏ <span id="player-my-nickname" class="gold-text">...</span>!</h2>
+        <p class="status-waiting">Đã vào phòng thành công. Đang chờ giáo viên bắt đầu trò chơi...</p>
+        <div class="cart-animation-container">
+          <div class="gold-cart">🛒</div>
+          <div class="gold-sparks"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. HOST GAME SCREEN                        -->
+    <!-- ========================================== -->
+    <div id="screen-host-game" class="screen">
+      <div class="game-header">
+        <div class="question-progress">Câu hỏi <span id="host-question-index">1</span>/6</div>
+        <div class="timer-display">
+          <svg class="timer-svg" viewBox="0 0 100 100">
+            <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+            <circle id="timer-bar" class="timer-progress" cx="50" cy="50" r="45"></circle>
+          </svg>
+          <span id="host-timer-text" class="timer-number">20</span>
+        </div>
+        <button id="btn-skip-question" class="btn btn-warning">KẾT THÚC CÂU HỎI</button>
+      </div>
+
+      <div class="question-container">
+        <h2 id="host-question-text" class="question-title">Đang tải câu hỏi...</h2>
+      </div>
+
+      <div class="options-grid">
+        <div class="option-card opt-0">
+          <span class="option-icon">♦</span>
+          <span id="host-opt-0-text" class="option-text">...</span>
+        </div>
+        <div class="option-card opt-1">
+          <span class="option-icon">■</span>
+          <span id="host-opt-1-text" class="option-text">...</span>
+        </div>
+        <div class="option-card opt-2">
+          <span class="option-icon">▲</span>
+          <span id="host-opt-2-text" class="option-text">...</span>
+        </div>
+        <div class="option-card opt-3">
+          <span class="option-icon">●</span>
+          <span id="host-opt-3-text" class="option-text">...</span>
+        </div>
+      </div>
+
+      <div class="answers-count-footer">
+        Đã trả lời: <span id="host-answers-count">0</span> thợ mỏ
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 5. PLAYER GAME SCREEN                      -->
+    <!-- ========================================== -->
+    <div id="screen-player-game" class="screen">
+      <div class="player-header">
+        <div id="player-timer-bar" class="progress-bar"></div>
+        <div class="player-info-row">
+          <span class="player-nick-badge">🤠 <span id="player-hud-name">...</span></span>
+          <span class="player-score-badge">💰 <span id="player-hud-score">0</span></span>
+        </div>
+      </div>
+
+      <div class="player-question-info">
+        <p id="player-question-preview">Câu hỏi đang diễn ra...</p>
+      </div>
+
+      <div class="player-options-grid">
+        <button class="player-opt-btn opt-0" data-index="0">
+          <span class="btn-shape">♦</span>
+        </button>
+        <button class="player-opt-btn opt-1" data-index="1">
+          <span class="btn-shape">■</span>
+        </button>
+        <button class="player-opt-btn opt-2" data-index="2">
+          <span class="btn-shape">▲</span>
+        </button>
+        <button class="player-opt-btn opt-3" data-index="3">
+          <span class="btn-shape">●</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 6. PLAYER ANSWER SUBMITTED SCREEN          -->
+    <!-- ========================================== -->
+    <div id="screen-player-wait-reveal" class="screen">
+      <div class="wait-reveal-container">
+        <div class="loader-pickaxe">⛏️</div>
+        <h2>Đã ghi nhận câu trả lời!</h2>
+        <p>Đang chờ các thợ mỏ khác hoàn thành...</p>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 7. HOST REVEAL SCREEN                      -->
+    <!-- ========================================== -->
+    <div id="screen-host-reveal" class="screen">
+      <header class="reveal-header">
+        <h2>KẾT QUẢ CÂU HỎI</h2>
+        <button id="btn-reveal-next" class="btn btn-primary">XEM BẢNG XẾP HẠNG 📊</button>
+      </header>
+
+      <main class="reveal-main">
+        <div class="correct-answer-banner">
+          <span class="banner-title">ĐÁP ÁN ĐÚNG:</span>
+          <div id="host-reveal-correct-text" class="correct-text-card">...</div>
+        </div>
+
+        <div class="mining-logs-container">
+          <h3>Nhật ký đào vàng thời gian thực:</h3>
+          <div id="host-mining-logs" class="logs-list">
+            <!-- Mining updates will slide in here -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 8. PLAYER REVEAL & MINING SCREEN           -->
+    <!-- ========================================== -->
+    <div id="screen-player-reveal" class="screen">
+      
+      <!-- State: Incorrect -->
+      <div id="player-reveal-incorrect" class="reveal-result-state">
+        <div class="result-icon incorrect">❌</div>
+        <h2 class="incorrect-title">Tiếc quá, Sai rồi!</h2>
+        <p class="correct-clarification">Đáp án đúng là: <strong id="player-reveal-correct-ans">...</strong></p>
+        <p class="encouragement">Cố gắng ở câu tiếp theo nhé thợ mỏ!</p>
+      </div>
+
+      <!-- State: Correct -> MINING MINIGAME -->
+      <div id="player-reveal-correct" class="reveal-result-state">
+        <div class="result-icon correct">✅</div>
+        <h2 class="correct-title">Chúc mừng! Bạn đã trả lời đúng!</h2>
+        <p class="score-added">+<span id="player-base-points">500</span> điểm trả lời nhanh!</p>
+        
+        <div class="mining-game-box">
+          <h3>ĐÀO VÀNG CỔ ĐIỂN 🤠</h3>
+          <p class="mining-subtext">Nhấp vào màn hình chơi bên dưới để phóng ngàm gắp!</p>
+          
+          <div class="canvas-container" style="position:relative; width:100%; border-radius:12px; overflow:hidden; border:2px solid var(--color-gold-light); background-color:#1c1107;">
+            <canvas id="mining-canvas" width="360" height="240" style="display:block; width:100%; height:auto; cursor:pointer;"></canvas>
+            <div id="canvas-time-left" style="position:absolute; top:8px; right:12px; font-weight:800; color:var(--color-gold-light); font-size:0.95rem; background:rgba(0,0,0,0.5); padding:2px 8px; border-radius:4px;">⏱️ 8s</div>
+          </div>
+        </div>
+
+        <!-- Mining Reward Overlay -->
+        <div id="mining-reward-overlay" class="reward-overlay">
+          <div class="reward-content">
+            <div id="reward-visual" class="reward-emoji">💰</div>
+            <h2 id="reward-title">Bạn nhận được:</h2>
+            <p id="reward-text" class="reward-desc">...</p>
+            <button id="btn-close-reward" class="btn btn-primary">Xong</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 9. HOST LEADERBOARD SCREEN                 -->
+    <!-- ========================================== -->
+    <div id="screen-host-leaderboard" class="screen">
+      <header class="leaderboard-header">
+        <h1>BẢNG XẾP HẠNG THỢ MỎ</h1>
+        <button id="btn-leaderboard-next" class="btn btn-success">TIẾP TỤC ➡️</button>
+      </header>
+      
+      <main class="leaderboard-main">
+        <div id="host-leaderboard-list" class="leaderboard-list">
+          <!-- Standings will render here -->
+        </div>
+      </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 10. PLAYER LEADERBOARD SCREEN              -->
+    <!-- ========================================== -->
+    <div id="screen-player-leaderboard" class="screen">
+      <div class="player-standings-card">
+        <div class="miner-badge">🤠</div>
+        <h2>Vị trí hiện tại của bạn</h2>
+        <div class="rank-display">#<span id="player-my-rank">1</span></div>
+        <p class="player-score-sum">Tổng số vàng đã đào: <span id="player-total-gold" class="gold-text">0</span> 💰</p>
+        <p class="wait-next-info">Hãy nhìn lên màn hình giáo viên để chuẩn bị câu tiếp theo!</p>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 11. HOST GAME OVER SCREEN                  -->
+    <!-- ========================================== -->
+    <div id="screen-host-gameover" class="screen">
+      <h1 class="gameover-title">🏆 KẾT QUẢ ĐẠI HỘI ĐÀO VÀNG 🏆</h1>
+      
+      <div class="podium-container">
+        <!-- 2nd Place -->
+        <div class="podium-place second">
+          <div class="podium-cart">🥈🛒</div>
+          <div class="podium-user" id="podium-2nd-name">N/A</div>
+          <div class="podium-score" id="podium-2nd-score">0</div>
+          <div class="podium-pedestal">2</div>
+        </div>
+
+        <!-- 1st Place -->
+        <div class="podium-place first">
+          <div class="podium-crown">👑</div>
+          <div class="podium-cart gold-cart-glow">🥇🛒</div>
+          <div class="podium-user" id="podium-1st-name">N/A</div>
+          <div class="podium-score" id="podium-1st-score">0</div>
+          <div class="podium-pedestal">1</div>
+        </div>
+
+        <!-- 3rd Place -->
+        <div class="podium-place third">
+          <div class="podium-cart">🥉🛒</div>
+          <div class="podium-user" id="podium-3rd-name">N/A</div>
+          <div class="podium-score" id="podium-3rd-score">0</div>
+          <div class="podium-pedestal">3</div>
+        </div>
+      </div>
+
+      <div class="gameover-controls">
+        <button id="btn-restart-game" class="btn btn-secondary">TRỞ VỀ TRANG CHỦ</button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 12. PLAYER GAME OVER SCREEN                -->
+    <!-- ========================================== -->
+    <div id="screen-player-gameover" class="screen">
+      <div class="player-gameover-card">
+        <div class="trophy-emoji">🏆</div>
+        <h2>Chúc mừng bạn đã hoàn thành!</h2>
+        <p class="gameover-rank-text">Hạng chung cuộc: <span id="player-final-rank" class="highlight">#0</span></p>
+        <p class="gameover-gold-text">Tổng số vàng đào được: <span id="player-final-gold" class="gold-text">0</span> 💰</p>
+        <button id="btn-player-exit" class="btn btn-secondary btn-block">CHƠI LẠI</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Audio Synthesis / Game Controller scripts -->
+  <script src="client.js"></script>
+</body>
+</html>
