@@ -1,9 +1,9 @@
 // ==========================================================================
 // GOLD MINER QUIZ - CLIENT SIDE CONTROLLER & SOUND SYNTHESIZER
 // ==========================================================================
-
-const socket = io();
-
+const socket = io({
+  transports: ['websocket', 'polling']
+});
 // UI Elements Cache
 const screens = {
   landing: document.getElementById('screen-landing'),
@@ -463,9 +463,14 @@ function initMiningGame() {
     }
   }, 1000);
 
-  // Click handler to launch hook
+  // Click/Touch handler to launch hook (remove 300ms mobile delay)
   canvas.removeEventListener('click', shootHook);
+  canvas.removeEventListener('touchstart', shootHook);
   canvas.addEventListener('click', shootHook);
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Prevent scroll and double firing
+    shootHook();
+  }, { passive: false });
   
   // Start animation loop
   if (gameInterval) cancelAnimationFrame(gameInterval);
