@@ -657,8 +657,10 @@ h1, h2, h3 {
   box-shadow: 0 8px 15px rgba(0,0,0,0.3);
   transition: transform 0.1s, box-shadow 0.1s;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 10px;
 }
 
 .player-opt-btn:active {
@@ -667,12 +669,21 @@ h1, h2, h3 {
 }
 
 .player-opt-btn .btn-shape {
-  font-size: 4rem;
+  font-size: 2.5rem;
   color: rgba(255,255,255,0.8);
+  margin-bottom: 5px;
 }
 
-.player-opt-btn.opt-3 .btn-shape {
-  color: rgba(0,0,0,0.6);
+.player-opt-btn .btn-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+}
+
+.player-opt-btn.opt-3 .btn-shape,
+.player-opt-btn.opt-3 .btn-text {
+  color: rgba(0,0,0,0.8);
 }
 
 /* ==========================================================================

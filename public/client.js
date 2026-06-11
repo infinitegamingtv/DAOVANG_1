@@ -61,6 +61,12 @@ const playerHudScore = document.getElementById('player-hud-score');
 const playerTimerBar = document.getElementById('player-timer-bar');
 const playerQuestionPreview = document.getElementById('player-question-preview');
 const playerOptBtns = document.querySelectorAll('.player-opt-btn');
+const playerOpts = [
+  document.getElementById('player-opt-0-text'),
+  document.getElementById('player-opt-1-text'),
+  document.getElementById('player-opt-2-text'),
+  document.getElementById('player-opt-3-text')
+];
 const playerRevealCorrect = document.getElementById('player-reveal-correct');
 const playerRevealIncorrect = document.getElementById('player-reveal-incorrect');
 const playerRevealCorrectAns = document.getElementById('player-reveal-correct-ans');
@@ -675,13 +681,14 @@ socket.on('new-question', ({ question, options, index, total, timeLeft }) => {
     showScreen('hostGame');
   } else {
     // Player gameplay view
-    playerQuestionPreview.innerText = `Câu ${index + 1}/${total}: HÃY CHỌN HÌNH KHỚP ĐÁP ÁN!`;
+    playerQuestionPreview.innerText = `Câu ${index + 1}/${total}: ${question}`;
     playerTimerBar.style.width = '100%';
     
-    // Reset selected states
-    playerOptBtns.forEach(btn => {
+    // Reset selected states and update text
+    playerOptBtns.forEach((btn, i) => {
       btn.style.opacity = '1';
       btn.disabled = false;
+      playerOpts[i].innerText = options[i];
     });
     
     showScreen('playerGame');
